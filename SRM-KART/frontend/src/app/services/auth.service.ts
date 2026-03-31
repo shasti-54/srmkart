@@ -1,0 +1,66 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
+
+export interface AuthResponse {
+  token: string;
+  error?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private apiUrl = 'http://localhost:8080/srmkart/api/auth';
+  
+  private _isLoggedIn = new BehaviorSubject<boolean>(this.hasToken());
+  public isLoggedIn$ = this._isLoggedIn.asObservable();
+
+  constructor(private http: HttpClient) {}
+
+  private hasToken(): boolean {
+    return !!localStorage.getItem('token');
+  }
+
+  register(data: any): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
+      tap(res => {
+        if (res.token) {
+          localStorage.setItem('token', res.token);
+          this._isLoggedIn.next(true);
+        }
+      })
+    );
+  }
+
+  login(data: any): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data).pipe(
+      tap(res => {
+        if (res.token) {
+          localStorage.setItem('token', res.token);
+          this._isLoggedIn.next(true);
+        }
+      })
+    );
+  }
+
+  logout() {
+    localStorage.removeItem('token');
+    this._isLoggedIn.next(false);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
+  getCurrentUserId(): number {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.id || 1;
+      } catch (e) { }
+    }
+    return 1; // Fallback mock ID
+  }
+}

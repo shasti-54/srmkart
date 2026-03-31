@@ -1,0 +1,22 @@
+# Ignore Node build dependencies
+node_modules/
+dist/
+.angular/
+
+# Ignore Java build directories
+target/
+*.war
+*.jar
+
+# Ignore IDE specific files
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# Ignore Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
