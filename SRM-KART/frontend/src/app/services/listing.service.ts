@@ -26,7 +26,7 @@ export interface Category {
   providedIn: 'root'
 })
 export class ListingService {
-  private apiUrl = 'http://localhost:8080/srmkart/api';
+  private apiUrl = '/api';
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
@@ -40,8 +40,15 @@ export class ListingService {
     return this.http.get<Listing[]>(`${this.apiUrl}/listings`);
   }
 
-  searchListings(query: string, categoryId: string = ''): Observable<Listing[]> {
-    return this.http.get<Listing[]>(`${this.apiUrl}/search?q=${query}&category=${categoryId}`);
+  getUserListings(userId: number): Observable<Listing[]> {
+    return this.http.get<Listing[]>(`${this.apiUrl}/users/${userId}/listings`, { headers: this.getAuthHeaders() });
+  }
+
+  searchListings(query: string, categoryId: string = '', minPrice?: number, maxPrice?: number): Observable<Listing[]> {
+    let url = `${this.apiUrl}/search?q=${query}&category=${categoryId}`;
+    if (minPrice !== undefined && minPrice !== null) url += `&minPrice=${minPrice}`;
+    if (maxPrice !== undefined && maxPrice !== null) url += `&maxPrice=${maxPrice}`;
+    return this.http.get<Listing[]>(url);
   }
 
   getCategories(): Observable<Category[]> {

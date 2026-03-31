@@ -7,7 +7,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class WishlistService {
-  private apiUrl = 'http://localhost:8080/srmkart/api/wishlist';
+  private apiUrl = '/api/wishlist';
   
   private savedListingIds = new BehaviorSubject<number[]>([]);
   public savedListingIds$ = this.savedListingIds.asObservable();
@@ -44,5 +44,9 @@ export class WishlistService {
         }
       })
     );
+  }
+
+  getWishlistDetails(userId: number): Observable<any[]> {
+    return this.http.get<any[]>(`/api/users/${userId}/wishlist`, { headers: this.getAuthHeaders() });
   }
 }

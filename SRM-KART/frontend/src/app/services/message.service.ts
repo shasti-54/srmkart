@@ -19,7 +19,7 @@ export interface Message {
   providedIn: 'root'
 })
 export class MessageService {
-  private apiUrl = 'http://localhost:8080/srmkart/api/messages';
+  private apiUrl = '/api/messages';
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 

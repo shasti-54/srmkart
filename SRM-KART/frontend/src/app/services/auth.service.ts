@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 export interface AuthResponse {
   token: string;
+  user?: any;
   error?: string;
 }
 
@@ -11,7 +12,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/srmkart/api/auth';
+  private apiUrl = '/api/auth';
   
   private _isLoggedIn = new BehaviorSubject<boolean>(this.hasToken());
   public isLoggedIn$ = this._isLoggedIn.asObservable();
@@ -27,6 +28,7 @@ export class AuthService {
       tap(res => {
         if (res.token) {
           localStorage.setItem('token', res.token);
+          if (res.user) localStorage.setItem('user', JSON.stringify(res.user));
           this._isLoggedIn.next(true);
         }
       })
@@ -38,6 +40,7 @@ export class AuthService {
       tap(res => {
         if (res.token) {
           localStorage.setItem('token', res.token);
+          if (res.user) localStorage.setItem('user', JSON.stringify(res.user));
           this._isLoggedIn.next(true);
         }
       })
@@ -46,6 +49,7 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     this._isLoggedIn.next(false);
   }
 

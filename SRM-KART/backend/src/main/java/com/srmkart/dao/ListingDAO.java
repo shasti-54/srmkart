@@ -73,7 +73,7 @@ public class ListingDAO {
         return false;
     }
     
-    public List<Listing> searchListings(String query, String categoryId) {
+    public List<Listing> searchListings(String query, String categoryId, Double minPrice, Double maxPrice) {
         List<Listing> listings = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT l.*, u.name as seller_name, c.name as category_name " +
                      "FROM listings l JOIN users u ON l.user_id = u.id JOIN categories c ON l.category_id = c.id " +
@@ -88,6 +88,14 @@ public class ListingDAO {
             sql.append("AND l.category_id = ? ");
             params.add(Integer.parseInt(categoryId));
         }
+        if (minPrice != null) {
+            sql.append("AND l.price >= ? ");
+            params.add(minPrice);
+        }
+        if (maxPrice != null) {
+            sql.append("AND l.price <= ? ");
+            params.add(maxPrice);
+        }
         
         sql.append("ORDER BY l.created_at DESC");
 
@@ -98,6 +106,27 @@ public class ListingDAO {
                 stmt.setObject(i + 1, params.get(i));
             }
             
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    listings.add(extractListingFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return listings;
+    }
+
+    public List<Listing> getListingsByUserId(int userId) {
+        List<Listing> listings = new ArrayList<>();
+        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name " +
+                     "FROM listings l " +
+                     "JOIN users u ON l.user_id = u.id " +
+                     "JOIN categories c ON l.category_id = c.id " +
+                     "WHERE l.user_id = ? ORDER BY l.created_at DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     listings.add(extractListingFromResultSet(rs));
@@ -125,7 +154,17 @@ public class ListingDAO {
         listing.setSellerName(rs.getString("seller_name"));
         listing.setCategoryName(rs.getString("category_name"));
         
-        // Fetch first image URL if needed (we could also do this via another DAO or a JOIN)
+        // Image URL (fetch from listing_images table)
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT image_url FROM listing_images WHERE listing_id = ? LIMIT 1")) {
+            stmt.setInt(1, listing.getId());
+            try (ResultSet imgRs = stmt.executeQuery()) {
+                if (imgRs.next()) {
+                    listing.setImageUrl(imgRs.getString("image_url"));
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        
         return listing;
     }
 }

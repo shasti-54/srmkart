@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { ListingService, Listing } from '../../services/listing.service';
+import { WishlistService } from '../../services/wishlist.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -55,8 +56,11 @@ import { AuthService } from '../../services/auth.service';
               <button class="btn btn-primary btn-lg action-btn" (click)="messageSeller()">
                 <span class="material-icons">chat</span> Message Seller
               </button>
-              <button class="btn btn-outline btn-lg action-btn" (click)="addToWishlist()">
-                <span class="material-icons">favorite_border</span> Save
+              <button class="btn btn-outline btn-lg action-btn" (click)="toggleWishlist()">
+                <span class="material-icons" [style.color]="isSaved() ? '#ef4444' : 'inherit'">
+                  {{ isSaved() ? 'favorite' : 'favorite_border' }}
+                </span> 
+                {{ isSaved() ? 'Saved' : 'Save' }}
               </button>
             </div>
 
@@ -281,10 +285,12 @@ export class ListingDetailComponent implements OnInit {
   listing: Listing | null = null;
   loading = true;
   error = '';
+  savedIds: number[] = [];
 
   constructor(
     private route: ActivatedRoute, 
     private listingService: ListingService,
+    private wishlistService: WishlistService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -303,6 +309,12 @@ export class ListingDetailComponent implements OnInit {
         }
       });
     }
+
+    this.wishlistService.savedListingIds$.subscribe(ids => this.savedIds = ids);
+  }
+
+  isSaved(): boolean {
+    return this.listing ? this.savedIds.includes(this.listing.id!) : false;
   }
 
   messageSeller() {
@@ -313,8 +325,7 @@ export class ListingDetailComponent implements OnInit {
     }
     
     if (this.listing) {
-      // Navigate to inbox with query parameters to start a new thread
-      const receiverId = this.listing['userId'] || 2; // Fallback to 2 if API doesn't return seller ID natively
+      const receiverId = this.listing['userId'] || 2; 
       this.router.navigate(['/inbox'], { 
         queryParams: { 
           listingId: this.listing.id, 
@@ -324,11 +335,14 @@ export class ListingDetailComponent implements OnInit {
     }
   }
 
-  addToWishlist() {
+  toggleWishlist() {
     if (!this.authService.getToken()) {
-      alert("Please login to add to wishlist.");
+      alert("Please login to save items.");
+      this.router.navigate(['/login']);
       return;
     }
-    alert("Added to wishlist!");
+    if (this.listing?.id) {
+      this.wishlistService.toggleWishlist(this.listing.id).subscribe();
+    }
   }
 }

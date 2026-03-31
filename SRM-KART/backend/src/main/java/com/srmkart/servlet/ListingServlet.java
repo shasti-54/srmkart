@@ -35,7 +35,13 @@ public class ListingServlet extends HttpServlet {
             if ("/api/search".equals(servletPath)) {
                 String query = req.getParameter("q");
                 String categoryId = req.getParameter("category");
-                List<Listing> listings = listingService.searchListings(query, categoryId);
+                String minPriceStr = req.getParameter("minPrice");
+                String maxPriceStr = req.getParameter("maxPrice");
+                
+                Double minPrice = (minPriceStr != null && !minPriceStr.isEmpty()) ? Double.parseDouble(minPriceStr) : null;
+                Double maxPrice = (maxPriceStr != null && !maxPriceStr.isEmpty()) ? Double.parseDouble(maxPriceStr) : null;
+                
+                List<Listing> listings = listingService.searchListings(query, categoryId, minPrice, maxPrice);
                 resp.getWriter().write(gson.toJson(listings));
                 return;
             }

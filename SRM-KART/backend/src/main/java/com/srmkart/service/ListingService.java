@@ -19,7 +19,7 @@ public class ListingService {
         return listingDAO.createListing(listing);
     }
 
-    public List<Listing> searchListings(String query, String categoryId) {
-        return listingDAO.searchListings(query, categoryId);
+    public List<Listing> searchListings(String query, String categoryId, Double minPrice, Double maxPrice) {
+        return listingDAO.searchListings(query, categoryId, minPrice, maxPrice);
     }
 }

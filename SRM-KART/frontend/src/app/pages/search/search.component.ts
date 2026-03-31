@@ -27,11 +27,11 @@ import { FormsModule } from '@angular/forms';
           <div class="filter-group">
             <label class="form-label">Price Range</label>
             <div class="price-inputs">
-              <input type="number" class="form-control form-control-sm" placeholder="Min">
+              <input type="number" class="form-control form-control-sm" placeholder="Min" [(ngModel)]="minPrice">
               <span>-</span>
-              <input type="number" class="form-control form-control-sm" placeholder="Max">
+              <input type="number" class="form-control form-control-sm" placeholder="Max" [(ngModel)]="maxPrice">
             </div>
-            <button class="btn btn-outline btn-block mt-2" style="padding: 0.5rem; font-size: 0.85rem;">Apply</button>
+            <button class="btn btn-outline btn-block mt-2" style="padding: 0.5rem; font-size: 0.85rem;" (click)="applyPriceFilter()">Apply</button>
           </div>
         </aside>
         
@@ -377,6 +377,8 @@ import { FormsModule } from '@angular/forms';
 export class SearchComponent implements OnInit {
   query = '';
   selectedCategory = '';
+  minPrice?: number;
+  maxPrice?: number;
   categories: Category[] = [];
   listings: Listing[] = [];
   loading = true;
@@ -415,18 +417,24 @@ export class SearchComponent implements OnInit {
   onFilterChange() {
     this.performSearch();
   }
+
+  applyPriceFilter() {
+    this.performSearch();
+  }
   
   clearFilters() {
     this.query = '';
     this.selectedCategory = '';
+    this.minPrice = undefined;
+    this.maxPrice = undefined;
     this.performSearch();
   }
 
   performSearch() {
     this.loading = true;
-    this.listingService.searchListings(this.query, this.selectedCategory).subscribe({
+    this.listingService.searchListings(this.query, this.selectedCategory, this.minPrice, this.maxPrice).subscribe({
       next: (data) => {
-        if (data && data.length > 0) {
+        if (data) {
           this.listings = data;
         } else {
           this.loadMockListings();

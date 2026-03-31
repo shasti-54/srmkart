@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ListingService, Listing } from '../../services/listing.service';
 import { WishlistService } from '../../services/wishlist.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -206,22 +207,29 @@ export class DashboardComponent implements OnInit {
   activeTab = 'listings';
   myListings: Listing[] = [];
   savedListings: Listing[] = [];
-  allListings: Listing[] = [];
 
   constructor(
     private listingService: ListingService,
-    private wishlistService: WishlistService
+    private wishlistService: WishlistService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
-    this.listingService.getAllListings().subscribe(res => {
-      this.allListings = res || [];
-      // Simulation for mock up: first two are "mine" if backend doesn't filter
-      this.myListings = this.allListings.slice(0, Math.min(2, this.allListings.length));
-      
-      this.wishlistService.savedListingIds$.subscribe(ids => {
-        this.savedListings = this.allListings.filter(l => ids.includes(l.id));
-      });
+    const userId = this.authService.getCurrentUserId();
+    
+    // Fetch my listings
+    this.listingService.getUserListings(userId).subscribe(res => {
+      this.myListings = res || [];
+    });
+
+    // Fetch wishlist details
+    this.wishlistService.getWishlistDetails(userId).subscribe(res => {
+      this.savedListings = res || [];
+    });
+
+    // Subscribe to ID changes to keep UI in sync if an item is removed
+    this.wishlistService.savedListingIds$.subscribe(ids => {
+      this.savedListings = this.savedListings.filter(l => ids.includes(l.id!));
     });
   }
 

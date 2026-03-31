@@ -34,11 +34,8 @@ public class UserServlet extends HttpServlet {
 
         try {
             if ("listings".equals(action)) {
-                // Fetch listings by this user. (We need a method in ListingDAO for this, but for now we filter in memory or we can just return all for simplicity)
-                // Assuming we add a method getListingsByUserId in ListingDAO.
-                // For now, return empty or implement it. 
-                // Creating a basic implementation:
-                resp.getWriter().write(gson.toJson(listingDAO.getAllListings().stream().filter(l -> l.getUserId() == id).toArray()));
+                List<Listing> userListings = listingDAO.getListingsByUserId(id);
+                resp.getWriter().write(gson.toJson(userListings));
             } else if ("wishlist".equals(action)) {
                 List<Listing> wishlist = wishlistDAO.getWishlistForUser(id);
                 resp.getWriter().write(gson.toJson(wishlist));
