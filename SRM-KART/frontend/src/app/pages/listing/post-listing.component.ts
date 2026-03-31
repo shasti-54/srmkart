@@ -60,12 +60,37 @@ import { AuthService } from '../../services/auth.service';
               <textarea class="form-control" name="description" [(ngModel)]="listing.description" required rows="5" placeholder="Provide details like expected usage, any damages, etc."></textarea>
             </div>
             
-            <div class="form-group upload-group mb-3">
+            <div class="form-group upload-group mb-4">
               <label class="form-label">Product Image *</label>
-              <div class="file-upload-box">
-                <span class="material-icons upload-icon">cloud_upload</span>
-                <p>Drag and drop or click to upload</p>
-                <input type="file" class="file-input" (change)="onFileSelected($event)" accept="image/*" required>
+              
+              <!-- Drag and Drop Box -->
+              <div class="file-upload-box" 
+                   [class.drag-over]="isDragging"
+                   (dragover)="onDragOver($event)" 
+                   (dragleave)="onDragLeave($event)" 
+                   (drop)="onDrop($event)">
+                
+                <div *ngIf="!imagePreview" class="upload-placeholder">
+                  <span class="material-icons upload-icon">cloud_upload</span>
+                  <p class="upload-text">Drag and drop or <span class="text-primary">click to browse</span></p>
+                  <p class="upload-hint">Supports: JPG, PNG, WEBP (Max 5MB)</p>
+                </div>
+
+                <div *ngIf="imagePreview" class="upload-preview-container">
+                  <img [src]="imagePreview" alt="preview" class="image-preview">
+                  <div class="preview-overlay">
+                    <span class="material-icons">refresh</span>
+                    <p>Click to change image</p>
+                  </div>
+                </div>
+
+                <input type="file" class="file-input" (change)="onFileSelected($event)" accept="image/*" #fileInput>
+              </div>
+              
+              <div *ngIf="selectedFile" class="file-name-tag">
+                <span class="material-icons">image</span>
+                {{selectedFile.name}}
+                <button type="button" class="btn-remove" (click)="clearFile($event)">×</button>
               </div>
             </div>
 
@@ -123,33 +148,91 @@ import { AuthService } from '../../services/auth.service';
     .flex-1 { flex: 1; }
 
     .file-upload-box {
-      border: 2px dashed var(--border-color);
-      border-radius: var(--radius-md);
+      border: 3px dashed #e2e8f0;
+      border-radius: 20px;
       padding: 3rem 1.5rem;
       text-align: center;
       position: relative;
-      background: var(--bg-main);
-      transition: all 0.2s;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      overflow: hidden;
     }
 
-    .file-upload-box:hover {
-      border-color: var(--primary-color);
-      background: #f1f3f5;
+    .file-upload-box:hover, .file-upload-box.drag-over {
+      border-color: #312e81;
+      background: #f1f5ff;
+    }
+
+    .file-upload-box.drag-over {
+      transform: scale(1.02);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }
 
     .upload-icon {
-      font-size: 3rem;
-      color: var(--text-muted);
+      font-size: 3.5rem;
+      color: #94a3b8;
       margin-bottom: 1rem;
+      transition: transform 0.3s ease;
     }
+    .file-upload-box:hover .upload-icon { transform: translateY(-5px); color: #312e81; }
+
+    .upload-text { font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 5px; }
+    .upload-hint { font-size: 0.85rem; color: #64748b; }
+    .text-primary { color: #312e81; text-decoration: underline; }
+
+    /* Preview Component */
+    .upload-preview-container {
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .image-preview {
+      max-width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+    }
+    .preview-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(49, 46, 129, 0.7);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .upload-preview-container:hover .preview-overlay { opacity: 1; }
 
     .file-input {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       opacity: 0;
       cursor: pointer;
-      width: 100%;
+      z-index: 10;
     }
+
+    .file-name-tag {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: #f1f5f9;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      color: #334155;
+      font-weight: 500;
+    }
+    .btn-remove {
+      background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8; line-height: 1;
+    }
+    .btn-remove:hover { color: #ef4444; }
 
     .divider {
       border: none;
@@ -192,6 +275,8 @@ export class PostListingComponent implements OnInit {
     imageUrl: ''
   };
   selectedFile: File | null = null;
+  imagePreview: string | null = null;
+  isDragging = false;
   loading = false;
   error = '';
 
@@ -212,9 +297,51 @@ export class PostListingComponent implements OnInit {
   }
 
   onFileSelected(event: any) {
-    if (event.target.files.length > 0) {
-      this.selectedFile = event.target.files[0];
+    const file = event.target.files[0];
+    if (file) {
+      this.processFile(file);
     }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = true;
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+    
+    if (event.dataTransfer?.files.length) {
+      this.processFile(event.dataTransfer.files[0]);
+    }
+  }
+
+  processFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      this.error = 'Please upload an image file.';
+      return;
+    }
+    this.selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.imagePreview = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearFile(event: Event) {
+    event.stopPropagation();
+    this.selectedFile = null;
+    this.imagePreview = null;
   }
 
   onSubmit() {

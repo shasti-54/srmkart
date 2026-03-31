@@ -71,6 +71,7 @@ public class ListingServlet extends HttpServlet {
         try {
             Integer userId = (Integer) req.getAttribute("userId");
             if (userId == null) {
+                System.err.println("Listing creation failed: User ID not found in request (Unauthorized)");
                 resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
@@ -81,6 +82,7 @@ public class ListingServlet extends HttpServlet {
             if (contentType != null && contentType.toLowerCase().startsWith("multipart/form-data")) {
                 String listingJson = req.getParameter("listing");
                 if (listingJson == null) {
+                    System.err.println("Listing creation failed: 'listing' parameter missing in multipart request");
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                     return;
                 }
@@ -92,14 +94,23 @@ public class ListingServlet extends HttpServlet {
                     String fileName = UUID.randomUUID().toString() + "-" + originalName;
                     String mimeType = filePart.getContentType() != null ? filePart.getContentType() : "image/jpeg";
                     
-                    // Upload to AWS S3 — returns permanent public URL
-                    String imageUrl = S3Uploader.uploadImage(
-                        filePart.getInputStream(),
-                        fileName,
-                        mimeType,
-                        filePart.getSize()
-                    );
-                    newListing.setImageUrl(imageUrl);
+                    try {
+                        // Upload to AWS S3
+                        String imageUrl = S3Uploader.uploadImage(
+                            filePart.getInputStream(),
+                            fileName,
+                            mimeType,
+                            filePart.getSize()
+                        );
+                        newListing.setImageUrl(imageUrl);
+                        System.out.println("Image uploaded successfully to S3: " + imageUrl);
+                    } catch (Exception s3Ex) {
+                        System.err.println("S3 Upload FAILED: " + s3Ex.getMessage());
+                        s3Ex.printStackTrace();
+                        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        resp.getWriter().write("{\"error\": \"Failed to upload image: " + s3Ex.getMessage() + "\"}");
+                        return;
+                    }
                 }
             } else {
                 newListing = gson.fromJson(req.getReader(), Listing.class);
@@ -109,14 +120,19 @@ public class ListingServlet extends HttpServlet {
             newListing.setStatus("active");
             
             if (listingService.createListing(newListing)) {
+                System.out.println("Listing created successfully in database for user " + userId);
                 resp.setStatus(HttpServletResponse.SC_CREATED);
                 resp.getWriter().write(gson.toJson(newListing));
             } else {
+                System.err.println("Database error: Failed to save listing for user " + userId);
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                resp.getWriter().write("{\"error\": \"Failed to save listing to database. Check if category ID is valid.\"}");
             }
         } catch (Exception e) {
+            System.err.println("Unexpected error in ListingServlet: " + e.getMessage());
             e.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("{\"error\": \"Error processing request: " + e.getMessage() + "\"}");
         }
     }
 }

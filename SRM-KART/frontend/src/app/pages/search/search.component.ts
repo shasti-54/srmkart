@@ -436,72 +436,12 @@ export class SearchComponent implements OnInit {
       next: (data) => {
         if (data) {
           this.listings = data;
-        } else {
-          this.loadMockListings();
         }
         this.loading = false;
       },
       error: () => {
-        this.loadMockListings();
         this.loading = false;
       }
-    });
-  }
-
-  loadMockListings() {
-    const allMocks = [
-      {
-        id: 1,
-        title: 'Casio FX-991EX Scientific Calculator',
-        description: 'Barely used, perfect condition.',
-        price: 500,
-        categoryId: 2,
-        categoryName: 'CALCULATORS',
-        conditionStatus: 'NEW',
-        sellerName: 'Priya Sharma',
-        imageUrl: 'https://images.unsplash.com/photo-1594951010368-22bd6f120790?auto=format&fit=crop&q=80&w=400'
-      },
-      {
-        id: 2,
-        title: 'Sony WH-1000XM4 Noise Cancelling Headphones',
-        description: 'Great for studying in noisy dorms.',
-        price: 8500,
-        categoryId: 2,
-        categoryName: 'ELECTRONICS',
-        conditionStatus: 'Good',
-        sellerName: 'Rahul Verma',
-        imageUrl: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=400'
-      },
-      {
-        id: 3,
-        title: 'Engineering Mathematics Vol 1. by H.K. Dass',
-        description: 'Brand new, uncut pages.',
-        price: 300,
-        categoryId: 1,
-        categoryName: 'BOOKS',
-        conditionStatus: 'NEW',
-        sellerName: 'Anjali Desai',
-        imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400'
-      },
-      {
-        id: 4,
-        title: 'Ergonomic Desk Chair with Lumbar Support',
-        description: 'Heavy duty study chair, moving out sale.',
-        price: 1200,
-        categoryId: 5,
-        categoryName: 'FURNITURE',
-        conditionStatus: 'Fair',
-        sellerName: 'Karan Singh',
-        imageUrl: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&q=80&w=400'
-      }
-    ];
-
-    // Simple mock filter
-    this.listings = allMocks.filter(m => {
-      let match = true;
-      if (this.selectedCategory && m.categoryId.toString() !== this.selectedCategory) match = false;
-      if (this.query && !m.title.toLowerCase().includes(this.query.toLowerCase())) match = false;
-      return match;
     });
   }
 }
