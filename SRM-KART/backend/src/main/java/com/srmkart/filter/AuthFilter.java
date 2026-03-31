@@ -23,8 +23,9 @@ public class AuthFilter implements Filter {
 
         String path = request.getRequestURI();
         
-        // Skip auth for login/register and GET requests to listings/search/categories
+        // Skip auth for login/register, setup, and public GET requests
         if (path.contains("/api/auth/") || 
+            path.contains("/api/setup") ||
            (request.getMethod().equalsIgnoreCase("GET") && 
             (path.contains("/api/listings") || path.contains("/api/search") || path.contains("/api/categories")))) {
             chain.doFilter(req, res);
