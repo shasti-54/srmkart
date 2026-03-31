@@ -40,17 +40,44 @@ public class AuthServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json");
         String pathInfo = req.getPathInfo();
-        AuthRequest authReq = gson.fromJson(req.getReader(), AuthRequest.class);
+        
+        AuthRequest authReq;
+        try {
+            authReq = gson.fromJson(req.getReader(), AuthRequest.class);
+        } catch (Exception e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Invalid request format.")));
+            return;
+        }
+
+        if (authReq == null || authReq.email == null || authReq.password == null) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Missing email or password.")));
+            return;
+        }
 
         if ("/register".equals(pathInfo)) {
-            String token = authService.registerUser(authReq.name, authReq.email, authReq.password, authReq.college);
-            if (token != null) {
-                User user = userDAO.findByEmail(authReq.email);
-                if (user != null) user.setPasswordHash(null); // Safety first
-                resp.getWriter().write(gson.toJson(new AuthResponse(token, user, null)));
-            } else {
+            if (authReq.name == null) {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Registration failed. Ensure email is an edu domain and not already taken.")));
+                resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Name is required for registration.")));
+                return;
+            }
+            
+            try {
+                String token = authService.registerUser(authReq.name, authReq.email, authReq.password, authReq.college);
+                if (token != null) {
+                    User user = userDAO.findByEmail(authReq.email);
+                    if (user != null) user.setPasswordHash(null);
+                    resp.getWriter().write(gson.toJson(new AuthResponse(token, user, null)));
+                } else {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Registration failed. Ensure email ends in .edu and is not taken.")));
+                }
+            } catch (Exception e) {
+                System.err.println("Registration error for " + authReq.email + ": " + e.getMessage());
+                e.printStackTrace();
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Internal server error: " + e.getMessage())));
             }
         } else if ("/login".equals(pathInfo)) {
             String token = authService.loginUser(authReq.email, authReq.password);

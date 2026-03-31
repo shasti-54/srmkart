@@ -31,6 +31,9 @@ FROM tomcat:9.0-jdk21-corretto
 # Clear out any default Tomcat applications to keep it clean
 RUN rm -rf /usr/local/tomcat/webapps/*
 
+# Fix: Disable Tomcat shutdown port (8005) to prevent "Invalid shutdown command" warnings in Render logs
+RUN sed -i 's/port="8005" shutdown="SHUTDOWN"/port="-1" shutdown="SHUTDOWN"/' /usr/local/tomcat/conf/server.xml
+
 # Copy our generated WAR file to ROOT.war so it serves at the bare domain (e.g. https://srmkart.render.com/)
 COPY --from=backend-build /app/backend/target/srmkart.war /usr/local/tomcat/webapps/ROOT.war
 

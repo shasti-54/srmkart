@@ -25,9 +25,10 @@ public class DBConnection {
             config.setConnectionTimeout(10000);
 
             dataSource = new HikariDataSource(config);
-        } catch (ClassNotFoundException e) {
+        } catch (Exception e) {
+            System.err.println("CRITICAL: Database connection failed during initialization!");
             e.printStackTrace();
-            throw new RuntimeException("MySQL Driver not found.");
+            throw new RuntimeException("Database connection failed: " + e.getMessage());
         }
     }
 

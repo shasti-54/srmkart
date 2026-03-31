@@ -9,6 +9,7 @@ public class AuthService {
     private UserDAO userDAO = new UserDAO();
 
     public String registerUser(String name, String email, String password, String college) {
+        if (email == null) return null;
         if (!email.toLowerCase().endsWith(".edu") && !email.toLowerCase().endsWith(".edu.in")) {
             return null; // Invalid email domain
         }
