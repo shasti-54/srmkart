@@ -37,7 +37,19 @@ public class AuthServlet extends HttpServlet {
     }
 
     @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String dbStatus = "Unknown";
+        try (java.sql.Connection conn = com.srmkart.util.DBConnection.getConnection()) {
+            dbStatus = "Connected!";
+        } catch (Exception e) {
+            dbStatus = "FAILED: " + e.getMessage();
+        }
+        resp.getWriter().write("SRM Kart Auth Servlet is active. \nPathInfo: " + req.getPathInfo() + "\nDB Status: " + dbStatus);
+    }
+
+    @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("DEBUG: AuthServlet Received POST request at " + req.getPathInfo());
         resp.setContentType("application/json");
         String pathInfo = req.getPathInfo();
         
