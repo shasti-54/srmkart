@@ -3,7 +3,7 @@ package com.srmkart.servlet;
 import com.google.gson.Gson;
 import com.srmkart.model.Listing;
 import com.srmkart.service.ListingService;
-import com.srmkart.util.S3Uploader;
+import com.srmkart.util.CloudinaryUploader;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.annotation.MultipartConfig;
@@ -95,20 +95,17 @@ public class ListingServlet extends HttpServlet {
                 if (filePart != null && filePart.getSize() > 0) {
                     String originalName = filePart.getSubmittedFileName();
                     String fileName = UUID.randomUUID().toString() + "-" + originalName;
-                    String mimeType = filePart.getContentType() != null ? filePart.getContentType() : "image/jpeg";
                     
                     try {
-                        // Upload to AWS S3
-                        String imageUrl = S3Uploader.uploadImage(
+                        // Upload to Cloudinary
+                        String imageUrl = CloudinaryUploader.uploadImage(
                             filePart.getInputStream(),
-                            fileName,
-                            mimeType,
-                            filePart.getSize()
+                            fileName
                         );
                         newListing.setImageUrl(imageUrl);
-                        System.out.println("Image uploaded successfully to S3: " + imageUrl);
+                        System.out.println("Image uploaded successfully to Cloudinary: " + imageUrl);
                     } catch (Exception s3Ex) {
-                        System.err.println("S3 Upload FAILED: " + s3Ex.getMessage());
+                        System.err.println("Cloudinary Upload FAILED: " + s3Ex.getMessage());
                         s3Ex.printStackTrace();
                         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                         resp.getWriter().write("{\"error\": \"Failed to upload image: " + s3Ex.getMessage() + "\"}");
