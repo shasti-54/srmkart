@@ -135,7 +135,8 @@ export class RegisterComponent {
     this.authService.register(this.user).subscribe({
       next: (res) => {
         this.loading = false;
-        this.router.navigate(['/verify'], { queryParams: { email: this.user.email } });
+        // Direct redirect to home/profile after registration
+        this.router.navigate(['/']);
       },
       error: (err) => {
         this.loading = false;
@@ -144,3 +145,4 @@ export class RegisterComponent {
     });
   }
 }
+ Riverside
