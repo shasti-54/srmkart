@@ -5,7 +5,6 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -52,7 +51,6 @@ public class S3Uploader {
                 .key(key)
                 .contentType(contentType)
                 .contentLength(contentLength)
-                .acl(ObjectCannedACL.PUBLIC_READ)
                 .build();
 
         s3Client.putObject(putRequest,

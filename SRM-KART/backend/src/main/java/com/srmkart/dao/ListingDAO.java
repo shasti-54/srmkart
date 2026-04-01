@@ -19,7 +19,7 @@ public class ListingDAO {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                listings.add(extractListingFromResultSet(rs));
+                listings.add(extractListingFromResultSet(rs, conn));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -38,7 +38,7 @@ public class ListingDAO {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return extractListingFromResultSet(rs);
+                    return extractListingFromResultSet(rs, conn);
                 }
             }
         } catch (SQLException e) {
@@ -49,28 +49,58 @@ public class ListingDAO {
 
     public boolean createListing(Listing listing) {
         String sql = "INSERT INTO listings (user_id, title, description, price, category_id, condition_status) VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setInt(1, listing.getUserId());
-            stmt.setString(2, listing.getTitle());
-            stmt.setString(3, listing.getDescription());
-            stmt.setBigDecimal(4, listing.getPrice());
-            stmt.setInt(5, listing.getCategoryId());
-            stmt.setString(6, listing.getConditionStatus());
-            
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
+        String imgSql = "INSERT INTO listing_images (listing_id, image_url) VALUES (?, ?)";
+        
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setInt(1, listing.getUserId());
+                stmt.setString(2, listing.getTitle());
+                stmt.setString(3, listing.getDescription());
+                stmt.setBigDecimal(4, listing.getPrice());
+                stmt.setInt(5, listing.getCategoryId());
+                stmt.setString(6, listing.getConditionStatus());
+                
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0) {
+                    conn.rollback();
+                    return false;
+                }
+
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        listing.setId(generatedKeys.getInt(1));
+                        int listingId = generatedKeys.getInt(1);
+                        listing.setId(listingId);
+
+                        // Insert Image URL if present
+                        if (listing.getImageUrl() != null && !listing.getImageUrl().isEmpty()) {
+                            try (PreparedStatement imgStmt = conn.prepareStatement(imgSql)) {
+                                imgStmt.setInt(1, listingId);
+                                imgStmt.setString(2, listing.getImageUrl());
+                                imgStmt.executeUpdate();
+                            }
+                        }
                     }
                 }
+                
+                conn.commit(); // Commit transaction
                 return true;
+            } catch (SQLException e) {
+                if (conn != null) conn.rollback();
+                e.printStackTrace();
+                return false;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            }
         }
-        return false;
     }
     
     public List<Listing> searchListings(String query, String categoryId, Double minPrice, Double maxPrice) {
@@ -108,7 +138,7 @@ public class ListingDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    listings.add(extractListingFromResultSet(rs));
+                    listings.add(extractListingFromResultSet(rs, conn));
                 }
             }
         } catch (SQLException e) {
@@ -129,7 +159,7 @@ public class ListingDAO {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    listings.add(extractListingFromResultSet(rs));
+                    listings.add(extractListingFromResultSet(rs, conn));
                 }
             }
         } catch (SQLException e) {
@@ -138,7 +168,7 @@ public class ListingDAO {
         return listings;
     }
 
-    private Listing extractListingFromResultSet(ResultSet rs) throws SQLException {
+    private Listing extractListingFromResultSet(ResultSet rs, Connection conn) throws SQLException {
         Listing listing = new Listing();
         listing.setId(rs.getInt("id"));
         listing.setUserId(rs.getInt("user_id"));
@@ -154,9 +184,8 @@ public class ListingDAO {
         listing.setSellerName(rs.getString("seller_name"));
         listing.setCategoryName(rs.getString("category_name"));
         
-        // Image URL (fetch from listing_images table)
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT image_url FROM listing_images WHERE listing_id = ? LIMIT 1")) {
+        // Image URL (fetch from listing_images table) using the PASSED connection
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT image_url FROM listing_images WHERE listing_id = ? LIMIT 1")) {
             stmt.setInt(1, listing.getId());
             try (ResultSet imgRs = stmt.executeQuery()) {
                 if (imgRs.next()) {

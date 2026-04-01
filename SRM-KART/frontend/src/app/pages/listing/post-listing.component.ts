@@ -362,7 +362,8 @@ export class PostListingComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = 'Failed to post listing. Please try again.';
+        this.error = err.error?.error || 'Failed to post listing. Please check if your AWS bucket allows public access.';
+        console.error('Listing post error:', err);
       }
     });
   }
