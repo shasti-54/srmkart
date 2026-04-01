@@ -194,6 +194,7 @@ import { RouterLink } from '@angular/router';
     .hero-logo-img {
       max-width: 450px;
       height: auto;
+      mix-blend-mode: multiply;
       filter: drop-shadow(0 10px 30px rgba(29, 95, 143, 0.15));
       animation: float 6s ease-in-out infinite;
     }
@@ -614,3 +615,4 @@ export class HomeComponent implements OnInit {
     });
   }
 }
+ Riverside
