@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { ListingService, Listing } from '../../services/listing.service';
 import { WishlistService } from '../../services/wishlist.service';
 import { AuthService } from '../../services/auth.service';
+import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-listing-detail',
@@ -25,19 +26,19 @@ import { AuthService } from '../../services/auth.service';
           <!-- Left Column: Gallery -->
           <div class="gallery-col">
             <div class="main-stage">
-              <img [src]="listing.imageUrl || 'assets/placeholder-item.png'" 
+              <img [src]="featuredImage || getInitialImage() || 'assets/placeholder-item.png'" 
                    onerror="this.src='https://placehold.co/600x600/f8f9fc/111827?text=No+Image'" 
-                   alt="{{listing.title}}" class="featured-image">
+                    alt="{{listing.title}}" class="featured-image">
               <div class="featured-badge">FEATURED</div>
             </div>
-            
-            <div class="thumbnail-row">
-              <div class="thumb active">
-                <img [src]="listing.imageUrl || 'assets/placeholder-item.png'" 
-                     onerror="this.src='https://placehold.co/100x100/f8f9fc/111827?text=Img'" alt="thumb">
-              </div>
-              <div class="thumb" *ngFor="let i of [1,2,3]">
-                <img src="https://placehold.co/100x100/f8f9fc/111827?text=Preview" alt="mock">
+           
+            <!-- Thumbnails: Only show if there's more than 1 image or a valid URL -->
+            <div class="thumbnail-row" *ngIf="listing.imageUrls && listing.imageUrls.length > 0">
+              <div class="thumb" 
+                   *ngFor="let url of listing.imageUrls" 
+                   [class.active]="(featuredImage || getInitialImage()) === url"
+                   (click)="selectImage(url)">
+                <img [src]="url" onerror="this.src='https://placehold.co/100x100/f8f9fc/111827?text=Img'" alt="thumb">
               </div>
             </div>
           </div>
@@ -70,8 +71,8 @@ import { AuthService } from '../../services/auth.service';
                <div class="seller-meta">
                   <div class="seller-primary">{{listing.sellerName}} · <span class="year-text">3rd Year CSE</span></div>
                   <div class="seller-stats">
-                    <span class="stars">★★★★★</span>
-                    <span class="stat-detail">4.9 · 12 sales · Active today</span>
+                    <span class="stars">{{ getStars(listing.sellerRating || 4.8) }}</span>
+                    <span class="stat-detail">{{ (listing.sellerRating || 4.8) | number:'1.1-1' }} · Verified Student</span>
                   </div>
                </div>
             </div>
@@ -79,6 +80,9 @@ import { AuthService } from '../../services/auth.service';
             <div class="action-buttons">
                <button class="btn btn-indigo btn-large" (click)="messageSeller()">
                   <span class="material-icons">message</span> Message Seller
+               </button>
+               <button class="btn btn-success btn-large" (click)="buyProduct()" *ngIf="listing.userId !== authService.getCurrentUserId()">
+                  <span class="material-icons">shopping_cart</span> Buy Now
                </button>
                <button class="btn btn-outline-white wishlist-circle" (click)="toggleWishlist()">
                   <span class="material-icons" [style.color]="isSaved() ? '#ef4444' : '#111827'">
@@ -317,6 +321,24 @@ import { AuthService } from '../../services/auth.service';
     }
     .wishlist-circle:hover { border-color: #312e81; }
 
+    .btn-success {
+      background: #10b981;
+      color: white;
+      border: none;
+      flex: 1;
+      padding: 1.25rem;
+      border-radius: 16px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+    .btn-success:hover { background: #059669; }
+
     @media (max-width: 1000px) {
       .concept-product-grid { grid-template-columns: 1fr; padding: 1.5rem; }
       .concept-title { font-size: 2.2rem; }
@@ -329,12 +351,14 @@ export class ListingDetailComponent implements OnInit {
   loading = true;
   error = '';
   savedIds: number[] = [];
+  featuredImage: string | null = null;
 
   constructor(
     private route: ActivatedRoute, 
     private listingService: ListingService,
     private wishlistService: WishlistService,
     private authService: AuthService,
+    private userService: UserService,
     private router: Router
   ) {}
 
@@ -354,6 +378,15 @@ export class ListingDetailComponent implements OnInit {
     }
 
     this.wishlistService.savedListingIds$.subscribe(ids => this.savedIds = ids);
+  }
+
+  getInitialImage(): string | null {
+    if (!this.listing) return null;
+    return this.listing.imageUrl || (this.listing.imageUrls && this.listing.imageUrls[0]) || null;
+  }
+
+  selectImage(url: string) {
+    this.featuredImage = url;
   }
 
   isSaved(): boolean {
@@ -378,6 +411,24 @@ export class ListingDetailComponent implements OnInit {
     }
   }
 
+  buyProduct() {
+    if (!this.authService.getToken()) {
+      alert("Please login to buy items.");
+      this.router.navigate(['/login']);
+      return;
+    }
+    if (this.listing && this.listing.id) {
+      const buyerId = this.authService.getCurrentUserId();
+      this.userService.buyListing(buyerId, this.listing.id, this.listing.price).subscribe({
+        next: () => {
+          alert("Purchase successful! Check your Profile for history.");
+          this.router.navigate(['/profile']);
+        },
+        error: () => alert("Purchase failed. Please try again.")
+      });
+    }
+  }
+
   toggleWishlist() {
     if (!this.authService.getToken()) {
       alert("Please login to save items.");
@@ -387,5 +438,10 @@ export class ListingDetailComponent implements OnInit {
     if (this.listing?.id) {
       this.wishlistService.toggleWishlist(this.listing.id).subscribe();
     }
+  }
+
+  getStars(rating: number): string {
+    const fullStars = Math.round(rating);
+    return '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
   }
 }

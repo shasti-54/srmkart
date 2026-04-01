@@ -10,9 +10,12 @@ export interface Listing {
   price: number;
   categoryId: number;
   conditionStatus: string;
+  userId?: number;
   sellerName?: string;
+  sellerRating?: number;
   categoryName?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   createdAt?: string;
 }
 

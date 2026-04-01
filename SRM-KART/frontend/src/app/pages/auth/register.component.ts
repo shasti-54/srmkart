@@ -135,7 +135,7 @@ export class RegisterComponent {
     this.authService.register(this.user).subscribe({
       next: (res) => {
         this.loading = false;
-        this.router.navigate(['/']);
+        this.router.navigate(['/verify'], { queryParams: { email: this.user.email } });
       },
       error: (err) => {
         this.loading = false;

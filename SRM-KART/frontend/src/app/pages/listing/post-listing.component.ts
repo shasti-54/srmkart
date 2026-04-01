@@ -53,51 +53,43 @@ import { AuthService } from '../../services/auth.service';
                 <option value="Good">Good</option>
                 <option value="Fair">Fair</option>
               </select>
-            </div>
-
-            <div class="form-group mb-3">
+            </div>            <div class="form-group mb-3">
               <label class="form-label">Description *</label>
-              <textarea class="form-control" name="description" [(ngModel)]="listing.description" required rows="5" placeholder="Provide details like expected usage, any damages, etc."></textarea>
+              <textarea class="form-control" name="description" [(ngModel)]="listing.description" required rows="4" placeholder="Provide details like expected usage, any damages, etc."></textarea>
             </div>
             
             <div class="form-group upload-group mb-4">
-              <label class="form-label">Product Image *</label>
+              <label class="form-label">Product Images (Up to 4) *</label>
               
-              <!-- Drag and Drop Box -->
-              <div class="file-upload-box" 
-                   [class.drag-over]="isDragging"
-                   (dragover)="onDragOver($event)" 
-                   (dragleave)="onDragLeave($event)" 
-                   (drop)="onDrop($event)">
-                
-                <div *ngIf="!imagePreview" class="upload-placeholder">
-                  <span class="material-icons upload-icon">cloud_upload</span>
-                  <p class="upload-text">Drag and drop or <span class="text-primary">click to browse</span></p>
-                  <p class="upload-hint">Supports: JPG, PNG, WEBP (Max 5MB)</p>
+              <div class="multi-upload-grid">
+                <!-- Image Slots -->
+                <div *ngFor="let preview of imagePreviews; let i = index" class="upload-slot preview-slot">
+                  <img [src]="preview" alt="preview" class="slot-image">
+                  <button type="button" class="remove-slot" (click)="removeImage(i)">×</button>
+                  <div class="slot-number">{{i + 1}}</div>
                 </div>
 
-                <div *ngIf="imagePreview" class="upload-preview-container">
-                  <img [src]="imagePreview" alt="preview" class="image-preview">
-                  <div class="preview-overlay">
-                    <span class="material-icons">refresh</span>
-                    <p>Click to change image</p>
-                  </div>
+                <!-- Add More Slot -->
+                <div *ngIf="imagePreviews.length < 4" 
+                     class="upload-slot add-slot"
+                     [class.drag-over]="isDragging"
+                     (dragover)="onDragOver($event)" 
+                     (dragleave)="onDragLeave($event)" 
+                     (drop)="onDrop($event)"
+                     (click)="fileInput.click()">
+                  <span class="material-icons">add_a_photo</span>
+                  <p>Add Image</p>
+                  <input type="file" class="hidden-input" (change)="onFileSelected($event)" accept="image/*" #fileInput multiple>
                 </div>
-
-                <input type="file" class="file-input" (change)="onFileSelected($event)" accept="image/*" #fileInput>
               </div>
               
-              <div *ngIf="selectedFile" class="file-name-tag">
-                <span class="material-icons">image</span>
-                {{selectedFile.name}}
-                <button type="button" class="btn-remove" (click)="clearFile($event)">×</button>
-              </div>
+              <p class="upload-hint mt-2">Maximum 4 images. Supports: JPG, PNG, WEBP (Max 5MB each)</p>
             </div>
 
             <hr class="divider">
 
             <div class="retail-actions">
-              <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="!postForm.form.valid || loading || listing.categoryId === 0">
+              <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="!postForm.form.valid || loading || listing.categoryId === 0 || imagePreviews.length === 0">
                 <span *ngIf="!loading">Publish Product</span>
                 <span *ngIf="loading" class="material-icons rotating">autorenew</span>
               </button>
@@ -147,93 +139,6 @@ import { AuthService } from '../../services/auth.service';
 
     .flex-1 { flex: 1; }
 
-    .file-upload-box {
-      border: 3px dashed #e2e8f0;
-      border-radius: 20px;
-      padding: 3rem 1.5rem;
-      text-align: center;
-      position: relative;
-      background: #f8fafc;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      overflow: hidden;
-    }
-
-    .file-upload-box:hover, .file-upload-box.drag-over {
-      border-color: #312e81;
-      background: #f1f5ff;
-    }
-
-    .file-upload-box.drag-over {
-      transform: scale(1.02);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    }
-
-    .upload-icon {
-      font-size: 3.5rem;
-      color: #94a3b8;
-      margin-bottom: 1rem;
-      transition: transform 0.3s ease;
-    }
-    .file-upload-box:hover .upload-icon { transform: translateY(-5px); color: #312e81; }
-
-    .upload-text { font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 5px; }
-    .upload-hint { font-size: 0.85rem; color: #64748b; }
-    .text-primary { color: #312e81; text-decoration: underline; }
-
-    /* Preview Component */
-    .upload-preview-container {
-      width: 100%;
-      height: 100%;
-      min-height: 200px;
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .image-preview {
-      max-width: 100%;
-      max-height: 300px;
-      object-fit: contain;
-    }
-    .preview-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(49, 46, 129, 0.7);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .upload-preview-container:hover .preview-overlay { opacity: 1; }
-
-    .file-input {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      opacity: 0;
-      cursor: pointer;
-      z-index: 10;
-    }
-
-    .file-name-tag {
-      margin-top: 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      background: #f1f5f9;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      color: #334155;
-      font-weight: 500;
-    }
-    .btn-remove {
-      background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8; line-height: 1;
-    }
-    .btn-remove:hover { color: #ef4444; }
-
     .divider {
       border: none;
       border-top: 1px solid var(--border-color);
@@ -258,9 +163,65 @@ import { AuthService } from '../../services/auth.service';
       margin-bottom: 2rem;
     }
 
+    .multi-upload-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .upload-slot {
+      aspect-ratio: 1/1;
+      border-radius: 12px;
+      border: 2px dashed #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      background: #f8fafc;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+
+    .add-slot:hover {
+      border-color: #312e81;
+      background: #f1f5ff;
+      color: #312e81;
+    }
+
+    .add-slot .material-icons { font-size: 2rem; margin-bottom: 5px; color: #94a3b8; }
+    .add-slot p { font-size: 0.85rem; font-weight: 600; margin: 0; color: #64748b; }
+
+    .preview-slot { border: none; background: #f3f4f6; }
+    .slot-image { width: 100%; height: 100%; object-fit: cover; }
+
+    .remove-slot {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.7);
+      color: white; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1.2rem;
+    }
+
+    .slot-number {
+      position: absolute;
+      bottom: 5px; left: 5px;
+      background: rgba(49, 46, 129, 0.8);
+      color: white; padding: 2px 8px;
+      border-radius: 10px; font-size: 0.7rem; font-weight: 700;
+    }
+
+    .hidden-input { display: none; }
+
     @media (max-width: 768px) {
       .form-row { flex-direction: column; gap: 1.5rem; }
       .retail-post-card { padding: 2rem 1.5rem; }
+      .multi-upload-grid { grid-template-columns: repeat(2, 1fr); }
     }
   `]
 })
@@ -272,10 +233,10 @@ export class PostListingComponent implements OnInit {
     categoryId: 0,
     conditionStatus: 'Good',
     description: '',
-    imageUrl: ''
+    imageUrls: [] as string[]
   };
-  selectedFile: File | null = null;
-  imagePreview: string | null = null;
+  selectedFiles: File[] = [];
+  imagePreviews: string[] = [];
   isDragging = false;
   loading = false;
   error = '';
@@ -297,9 +258,9 @@ export class PostListingComponent implements OnInit {
   }
 
   onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.processFile(file);
+    const files = event.target.files;
+    if (files) {
+      this.handleFiles(files);
     }
   }
 
@@ -321,27 +282,28 @@ export class PostListingComponent implements OnInit {
     this.isDragging = false;
     
     if (event.dataTransfer?.files.length) {
-      this.processFile(event.dataTransfer.files[0]);
+      this.handleFiles(event.dataTransfer.files);
     }
   }
 
-  processFile(file: File) {
-    if (!file.type.startsWith('image/')) {
-      this.error = 'Please upload an image file.';
-      return;
+  handleFiles(files: FileList) {
+    for (let i = 0; i < files.length; i++) {
+      if (this.selectedFiles.length >= 4) break;
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      
+      this.selectedFiles.push(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreviews.push(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-    this.selectedFile = file;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.imagePreview = reader.result as string;
-    };
-    reader.readAsDataURL(file);
   }
 
-  clearFile(event: Event) {
-    event.stopPropagation();
-    this.selectedFile = null;
-    this.imagePreview = null;
+  removeImage(index: number) {
+    this.selectedFiles.splice(index, 1);
+    this.imagePreviews.splice(index, 1);
   }
 
   onSubmit() {
@@ -350,19 +312,19 @@ export class PostListingComponent implements OnInit {
     
     const formData = new FormData();
     formData.append('listing', JSON.stringify(this.listing));
-    if (this.selectedFile) {
-      formData.append('image', this.selectedFile, this.selectedFile.name);
-    }
+    
+    this.selectedFiles.forEach((file, index) => {
+      formData.append(`image${index}`, file, file.name);
+    });
     
     this.listingService.createListingWithImage(formData).subscribe({
       next: (res) => {
         this.loading = false;
-        // Redirect to detail page
         this.router.navigate(['/listing', res.id]);
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.error || 'Failed to post listing. Please check if your AWS bucket allows public access.';
+        this.error = err.error?.error || 'Failed to post listing. Please try again.';
         console.error('Listing post error:', err);
       }
     });

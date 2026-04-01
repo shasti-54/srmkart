@@ -10,7 +10,8 @@ public class ListingDAO {
     
     public List<Listing> getAllListings() {
         List<Listing> listings = new ArrayList<>();
-        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name " +
+        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name, " +
+                     "(SELECT AVG(rating) FROM ratings WHERE seller_id = l.user_id) as seller_rating " +
                      "FROM listings l " +
                      "JOIN users u ON l.user_id = u.id " +
                      "JOIN categories c ON l.category_id = c.id " +
@@ -28,7 +29,8 @@ public class ListingDAO {
     }
 
     public Listing findById(int id) {
-        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name " +
+        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name, " +
+                     "(SELECT AVG(rating) FROM ratings WHERE seller_id = l.user_id) as seller_rating " +
                      "FROM listings l " +
                      "JOIN users u ON l.user_id = u.id " +
                      "JOIN categories c ON l.category_id = c.id " +
@@ -75,12 +77,15 @@ public class ListingDAO {
                         int listingId = generatedKeys.getInt(1);
                         listing.setId(listingId);
 
-                        // Insert Image URL if present
-                        if (listing.getImageUrl() != null && !listing.getImageUrl().isEmpty()) {
+                        // Insert All Image URLs
+                        List<String> imageUrls = listing.getImageUrls();
+                        if (imageUrls != null && !imageUrls.isEmpty()) {
                             try (PreparedStatement imgStmt = conn.prepareStatement(imgSql)) {
-                                imgStmt.setInt(1, listingId);
-                                imgStmt.setString(2, listing.getImageUrl());
-                                imgStmt.executeUpdate();
+                                for (String url : imageUrls) {
+                                    imgStmt.setInt(1, listingId);
+                                    imgStmt.setString(2, url);
+                                    imgStmt.executeUpdate();
+                                }
                             }
                         }
                     }
@@ -115,7 +120,8 @@ public class ListingDAO {
     
     public List<Listing> searchListings(String query, String categoryId, Double minPrice, Double maxPrice) {
         List<Listing> listings = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT l.*, u.name as seller_name, c.name as category_name " +
+        StringBuilder sql = new StringBuilder("SELECT l.*, u.name as seller_name, c.name as category_name, " +
+                     "(SELECT AVG(rating) FROM ratings WHERE seller_id = l.user_id) as seller_rating " +
                      "FROM listings l JOIN users u ON l.user_id = u.id JOIN categories c ON l.category_id = c.id " +
                      "WHERE l.status = 'active' ");
         
@@ -159,7 +165,8 @@ public class ListingDAO {
 
     public List<Listing> getListingsByUserId(int userId) {
         List<Listing> listings = new ArrayList<>();
-        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name " +
+        String sql = "SELECT l.*, u.name as seller_name, c.name as category_name, " +
+                     "(SELECT AVG(rating) FROM ratings WHERE seller_id = l.user_id) as seller_rating " +
                      "FROM listings l " +
                      "JOIN users u ON l.user_id = u.id " +
                      "JOIN categories c ON l.category_id = c.id " +
@@ -193,14 +200,17 @@ public class ListingDAO {
         // Joined fields
         listing.setSellerName(rs.getString("seller_name"));
         listing.setCategoryName(rs.getString("category_name"));
+        listing.setSellerRating(rs.getDouble("seller_rating"));
         
-        // Image URL (fetch from listing_images table) using the PASSED connection
-        try (PreparedStatement stmt = conn.prepareStatement("SELECT image_url FROM listing_images WHERE listing_id = ? LIMIT 1")) {
+        // Image URLs (fetch all related images from listing_images table)
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT image_url FROM listing_images WHERE listing_id = ? ORDER BY id ASC")) {
             stmt.setInt(1, listing.getId());
             try (ResultSet imgRs = stmt.executeQuery()) {
-                if (imgRs.next()) {
-                    listing.setImageUrl(imgRs.getString("image_url"));
+                List<String> images = new ArrayList<>();
+                while (imgRs.next()) {
+                    images.add(imgRs.getString("image_url"));
                 }
+                listing.setImageUrls(images);
             }
         } catch (SQLException e) { e.printStackTrace(); }
         

@@ -51,12 +51,16 @@ import { FormsModule } from '@angular/forms';
             </ng-container>
 
             <ng-template #loggedInTpl>
-              <a routerLink="/dashboard" class="action-item" title="My Account">
-                <span class="material-icons action-icon">person</span>
+              <a routerLink="/profile" class="action-item" title="My Profile">
+                <span class="material-icons action-icon">account_circle</span>
                 <div class="action-text-group">
                   <span class="action-text-small">Welcome back</span>
-                  <span class="action-text-main">Dashboard</span>
+                  <span class="action-text-main">My Profile</span>
                 </div>
+              </a>
+              
+              <a routerLink="/settings" class="action-item" title="Settings">
+                <span class="material-icons action-icon">settings</span>
               </a>
               
               <button (click)="logout()" class="action-item btn-link" title="Logout">

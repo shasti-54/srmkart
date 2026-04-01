@@ -7,6 +7,9 @@ import { SearchComponent } from './pages/search/search.component';
 import { PostListingComponent } from './pages/listing/post-listing.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { InboxComponent } from './pages/inbox/inbox.component';
+import { VerificationComponent } from './pages/auth/verification.component';
+import { ProfileComponent } from './pages/profile/profile.component';
+import { SettingsComponent } from './pages/settings/settings.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -17,5 +20,8 @@ export const routes: Routes = [
   { path: 'sell', component: PostListingComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'inbox', component: InboxComponent },
+  { path: 'verify', component: VerificationComponent },
+  { path: 'profile', component: ProfileComponent },
+  { path: 'settings', component: SettingsComponent },
   { path: '**', redirectTo: '' }
 ];

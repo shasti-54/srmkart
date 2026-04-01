@@ -9,17 +9,21 @@ public class User {
     private String passwordHash;
     private String college;
     private String profilePic;
+    private boolean isVerified;
+    private String verificationCode;
     private Timestamp createdAt;
 
     public User() {}
 
-    public User(int id, String name, String email, String passwordHash, String college, String profilePic, Timestamp createdAt) {
+    public User(int id, String name, String email, String passwordHash, String college, String profilePic, boolean isVerified, String verificationCode, Timestamp createdAt) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.passwordHash = passwordHash;
         this.college = college;
         this.profilePic = profilePic;
+        this.isVerified = isVerified;
+        this.verificationCode = verificationCode;
         this.createdAt = createdAt;
     }
 
@@ -40,6 +44,12 @@ public class User {
 
     public String getProfilePic() { return profilePic; }
     public void setProfilePic(String profilePic) { this.profilePic = profilePic; }
+
+    public boolean isVerified() { return isVerified; }
+    public void setVerified(boolean isVerified) { this.isVerified = isVerified; }
+
+    public String getVerificationCode() { return verificationCode; }
+    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
 
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }

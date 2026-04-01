@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @WebServlet(urlPatterns = {"/api/listings/*", "/api/search"})
@@ -91,27 +92,22 @@ public class ListingServlet extends HttpServlet {
                 }
                 newListing = gson.fromJson(listingJson, Listing.class);
                 
-                Part filePart = req.getPart("image");
-                if (filePart != null && filePart.getSize() > 0) {
-                    String originalName = filePart.getSubmittedFileName();
-                    String fileName = UUID.randomUUID().toString() + "-" + originalName;
-                    
-                    try {
-                        // Upload to Cloudinary
-                        String imageUrl = CloudinaryUploader.uploadImage(
-                            filePart.getInputStream(),
-                            fileName
-                        );
-                        newListing.setImageUrl(imageUrl);
-                        System.out.println("Image uploaded successfully to Cloudinary: " + imageUrl);
-                    } catch (Exception s3Ex) {
-                        System.err.println("Cloudinary Upload FAILED: " + s3Ex.getMessage());
-                        s3Ex.printStackTrace();
-                        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        resp.getWriter().write("{\"error\": \"Failed to upload image: " + s3Ex.getMessage() + "\"}");
-                        return;
+                // Upload multiple images
+                List<String> imageUrls = new ArrayList<>();
+                for (Part part : req.getParts()) {
+                    if (part.getName().startsWith("image") && part.getSize() > 0) {
+                        String originalName = part.getSubmittedFileName();
+                        String fileName = UUID.randomUUID().toString() + "-" + originalName;
+                        try {
+                            String imageUrl = CloudinaryUploader.uploadImage(part.getInputStream(), fileName);
+                            imageUrls.add(imageUrl);
+                            System.out.println("Image uploaded successfully: " + imageUrl);
+                        } catch (Exception ex) {
+                            System.err.println("Cloudinary Upload FAILED for " + originalName + ": " + ex.getMessage());
+                        }
                     }
                 }
+                newListing.setImageUrls(imageUrls);
             } else {
                 newListing = gson.fromJson(req.getReader(), Listing.class);
             }

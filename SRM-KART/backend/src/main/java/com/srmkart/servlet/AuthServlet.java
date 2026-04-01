@@ -17,13 +17,16 @@ public class AuthServlet extends HttpServlet {
     private UserDAO userDAO = new UserDAO();
     private Gson gson = new Gson();
 
+    @SuppressWarnings("unused")
     private static class AuthRequest {
         String name;
         String email;
         String password;
         String college;
+        String code;
     }
 
+    @SuppressWarnings("unused")
     private static class AuthResponse {
         String token;
         User user;
@@ -63,9 +66,13 @@ public class AuthServlet extends HttpServlet {
         }
 
         if (authReq == null || authReq.email == null || authReq.password == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Missing email or password.")));
-            return;
+            if ("/verify".equals(pathInfo) && authReq != null && authReq.email != null && authReq.code != null) {
+                // Proceed to verify
+            } else {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Missing email or password.")));
+                return;
+            }
         }
 
         if ("/register".equals(pathInfo)) {
@@ -100,6 +107,18 @@ public class AuthServlet extends HttpServlet {
             } else {
                 resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Invalid email or password.")));
+            }
+        } else if ("/verify".equals(pathInfo)) {
+            if (authReq.email != null && authReq.code != null) {
+                if (authService.verifyEmail(authReq.email, authReq.code)) {
+                    resp.getWriter().write(gson.toJson(new AuthResponse(null, null, null)));
+                } else {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Invalid verification code.")));
+                }
+            } else {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Email and code are required.")));
             }
         } else {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);

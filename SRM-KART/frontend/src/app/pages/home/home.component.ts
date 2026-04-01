@@ -22,9 +22,8 @@ import { RouterLink } from '@angular/router';
               <button class="btn btn-outline btn-cta ml-3" routerLink="/sell">Post an Item</button>
             </div>
           </div>
-          <div class="hero-image-placeholder">
-            <div class="fashion-box fashion-box-1"></div>
-            <div class="fashion-box fashion-box-2"></div>
+          <div class="hero-image-container">
+            <img src="assets/logo.png" alt="SRMKart Logo" class="hero-logo-img">
           </div>
         </div>
       </section>
@@ -184,33 +183,24 @@ import { RouterLink } from '@angular/router';
       letter-spacing: 1px;
     }
 
-    /* Abstract Fashion Box placeholder for right side of hero */
-    .hero-image-placeholder {
+    /* Brand Logo instead of Fashion Boxes */
+    .hero-image-container {
       flex: 1;
       display: flex;
       justify-content: center;
-      position: relative;
-      height: 400px;
+      align-items: center;
     }
 
-    .fashion-box {
-      width: 250px;
-      height: 350px;
-      background: var(--border-color);
-      position: absolute;
+    .hero-logo-img {
+      max-width: 450px;
+      height: auto;
+      filter: drop-shadow(0 10px 30px rgba(29, 95, 143, 0.15));
+      animation: float 6s ease-in-out infinite;
     }
 
-    .fashion-box-1 {
-      background: #e2e8f0;
-      z-index: 2;
-      transform: rotate(-5deg);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .fashion-box-2 {
-      background: #cbd5e1;
-      z-index: 1;
-      transform: rotate(10deg) translate(40px, 20px);
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
     }
 
     /* Campus Stats Banner */
@@ -543,7 +533,7 @@ import { RouterLink } from '@angular/router';
     @media (max-width: 768px) {
       .hero-content { flex-direction: column; text-align: center; }
       .hero-title { font-size: 3rem; }
-      .hero-image-placeholder { display: none; }
+      .hero-image-container { display: none; }
       .hero-actions { justify-content: center; }
     }
   `]

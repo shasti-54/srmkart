@@ -47,6 +47,10 @@ export class AuthService {
     );
   }
 
+  verify(email: string, code: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/verify`, { email, code });
+  }
+
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

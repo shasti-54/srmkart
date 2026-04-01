@@ -2,6 +2,8 @@ package com.srmkart.model;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Listing {
     private int id;
@@ -18,7 +20,9 @@ public class Listing {
     private String sellerName;
     private String sellerCollege;
     private String categoryName;
+    private double sellerRating;
     private String imageUrl;
+    private List<String> imageUrls = new ArrayList<>();
 
     public Listing() {}
 
@@ -58,6 +62,17 @@ public class Listing {
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 
+    public double getSellerRating() { return sellerRating; }
+    public void setSellerRating(double sellerRating) { this.sellerRating = sellerRating; }
+
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { 
+        this.imageUrls = imageUrls;
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            this.imageUrl = imageUrls.get(0);
+        }
+    }
 }
