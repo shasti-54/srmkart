@@ -81,6 +81,9 @@ public class ListingServlet extends HttpServlet {
             
             if (contentType != null && contentType.toLowerCase().startsWith("multipart/form-data")) {
                 String listingJson = req.getParameter("listing");
+                System.out.println("Processing multipart listing creation for UserID: " + userId);
+                System.out.println("Received Listing JSON: " + listingJson);
+                
                 if (listingJson == null) {
                     System.err.println("Listing creation failed: 'listing' parameter missing in multipart request");
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);

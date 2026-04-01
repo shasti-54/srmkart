@@ -89,7 +89,17 @@ public class ListingDAO {
                 conn.commit(); // Commit transaction
                 return true;
             } catch (SQLException e) {
-                if (conn != null) conn.rollback();
+                if (conn != null) {
+                    try { conn.rollback(); } catch (SQLException rollbackEx) { rollbackEx.printStackTrace(); }
+                }
+                System.err.println("SQL Error during listing creation:");
+                System.err.println("Message: " + e.getMessage());
+                System.err.println("SQL State: " + e.getSQLState());
+                System.err.println("Error Code: " + e.getErrorCode());
+                System.err.println("Parameters: UserID=" + listing.getUserId() + 
+                                   ", Title=" + listing.getTitle() + 
+                                   ", Price=" + listing.getPrice() + 
+                                   ", CategoryID=" + listing.getCategoryId());
                 e.printStackTrace();
                 return false;
             }
