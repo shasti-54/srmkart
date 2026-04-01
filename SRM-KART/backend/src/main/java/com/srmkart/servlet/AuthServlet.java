@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.srmkart.service.AuthService;
 import com.srmkart.model.User;
 import com.srmkart.dao.UserDAO;
+import com.srmkart.util.JwtUtil;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -51,7 +52,6 @@ public class AuthServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println("DEBUG: AuthServlet Received POST request at " + req.getPathInfo());
         resp.setContentType("application/json");
         String pathInfo = req.getPathInfo();
         
@@ -78,26 +78,32 @@ public class AuthServlet extends HttpServlet {
             }
             
             try {
-                String token = authService.registerUser(authReq.name, authReq.email, authReq.password, authReq.college);
-                if (token != null) {
-                    User user = userDAO.findByEmail(authReq.email);
+                int result = authService.registerUser(authReq.name, authReq.email, authReq.password, authReq.college);
+                
+                if (result == 1) {
+                    User user = userDAO.findByEmail(authReq.email.toLowerCase().trim());
+                    String token = JwtUtil.generateToken(user.getId(), user.getEmail());
                     if (user != null) user.setPasswordHash(null);
                     resp.getWriter().write(gson.toJson(new AuthResponse(token, user, null)));
                 } else {
+                    String msg = "Registration failed.";
+                    if (result == -1) msg = "This email is already registered. Please login instead.";
+                    else if (result == -3) msg = "Please use your official college email ending in .edu, .edu.in, or .ac.in";
+                    else if (result == -2) msg = "Invalid email format.";
+                    
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Registration failed. Ensure email ends in .edu and is not taken.")));
+                    resp.getWriter().write(gson.toJson(new AuthResponse(null, null, msg)));
                 }
             } catch (Exception e) {
-                System.err.println("Registration error for " + authReq.email + ": " + e.getMessage());
-                e.printStackTrace();
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 resp.getWriter().write(gson.toJson(new AuthResponse(null, null, "Internal server error: " + e.getMessage())));
+                e.printStackTrace();
             }
         } else if ("/login".equals(pathInfo)) {
             String token = authService.loginUser(authReq.email, authReq.password);
             if (token != null) {
-                User user = userDAO.findByEmail(authReq.email);
-                if (user != null) user.setPasswordHash(null); // Safety first
+                User user = userDAO.findByEmail(authReq.email.toLowerCase().trim());
+                if (user != null) user.setPasswordHash(null);
                 resp.getWriter().write(gson.toJson(new AuthResponse(token, user, null)));
             } else {
                 resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
